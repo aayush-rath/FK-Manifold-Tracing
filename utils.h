@@ -17,6 +17,7 @@ Aayush Rath
 
 constexpr int MAX_D = 6;
 constexpr int MAX_FACES = 256;
+constexpr int MAX_COFACES = 256;
 
 // Get the value of C(n, r) =  number of combinations
 int binomial (int n, int r) {
@@ -92,4 +93,17 @@ bool walsh_next(uint8_t k, const uint8_t *bounds, uint8_t *a) {
     return false;
 }
 
-  
+// Restricted Growth Strings for creating partitions
+bool rgs_init(uint8_t l, uint8_t k, uint8_t *rgs, uint8_t *max_val) {
+    if (l == 0 || k == 0 || k > l) return false;
+
+    for (uint8_t i = 0; i <= l - k; i++) rgs[i] = 0;
+    for (uint8_t i = l - k + 1, j = 1; i <= l; i++, j++) rgs[i] = j;
+
+    max_val[0] = 255;
+    for (uint8_t i = 1; i <= l + 1; i++) {
+        max_val[i] = rgs[i - 1] + 1;
+    }
+
+    return true;
+}

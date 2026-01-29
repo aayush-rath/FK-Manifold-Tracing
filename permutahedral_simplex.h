@@ -70,7 +70,7 @@ int faces(
     Permutahedral_Simplex *k_faces,
     uint8_t k
 ) {
-    const uint8_t l = s.num_blocks - 1;
+    const uint8_t l = s.num_blocks - 1;                                                                     // The dimension l of the input simplex
     if (k > l) return 0;
 
     uint8_t comb[MAX_D];
@@ -121,4 +121,26 @@ int faces(
     } while (next_combination(comb, k, l));
 
     return face_index;
+}
+
+int cofaces(
+    const Permutahedral_Simplex& s,
+    Permutahedral_Simplex* l_faces,
+    uint8_t l
+) {
+    const uint8_t k = s.num_blocks - 1;
+    if (l < k) return 0;
+
+    uint8_t a[MAX_D];
+
+    uint8_t bounds[MAX_D];
+    for (int i = 0; i <= k; i++) {
+        bounds[i] = s.block_sizes[i];
+    }
+
+    if (!walsh_init(k, l, bounds, a)) return 0;
+    int coface_index = 0;
+
+    do {
+    } while (walsh_next(k, bounds, a));
 }
