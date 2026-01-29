@@ -76,7 +76,49 @@ int faces(
     uint8_t comb[MAX_D];
     init_combination(comb, k);
 
+    int face_index = 0;
+
     do {
         Permutahedral_Simplex k_face;
-    } while (next_combination(comb, k, s.num_blocks));
+        k_face.amb_dim = s.amb_dim;
+
+        for (int i = 0; i < s.amb_dim; i++) k_face.anchor[i] = s.anchor[i];
+        for (int i = 0; i <= k; i++) k_face.block_sizes[i] = 0;
+
+        for (int b = 0; b < comb[0]; b++) {
+            for (int j = 0; j < s.block_sizes[b]; j++) {
+                int idx = s.blocks[b][j];
+                if (idx == s.amb_dim) {
+                    for (int d = 0; d < s.amb_dim; ++d)
+                        k_face.anchor[d]--;
+                } else {
+                    k_face.anchor[idx]++;
+                }
+            }
+        }
+
+        k_face.num_blocks = k + 1;
+
+        for (int i = 0; i <= k; i++) {
+            if (i < k) {
+                k_face.block_sizes[i] = 0;
+                for (int j = comb[i]; j < comb[i+1]; j++) {
+                    for (int b = 0; b < s.block_sizes[j]; b++) k_face.blocks[i][k_face.block_sizes[i]++] = s.blocks[j][b];
+                }
+            }
+
+            if (i == k) {
+                k_face.block_sizes[k] = 0;
+                for (int j = 0; j < comb[0]; j++) {
+                    for(int b = 0; b < s.block_sizes[j]; b++) k_face.blocks[k][k_face.block_sizes[k]++] = s.blocks[j][b];
+                }
+                for (int j = comb[k]; j < l + 1; j++) {
+                    for(int b = 0; b < s.block_sizes[j]; b++) k_face.blocks[k][k_face.block_sizes[k]++] = s.blocks[j][b];
+                }
+            }
+        }
+        k_faces[face_index++] = k_face;
+    } while (next_combination(comb, k, l));
+
+    return face_index;
 }

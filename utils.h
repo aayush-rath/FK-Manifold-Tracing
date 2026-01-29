@@ -16,6 +16,7 @@ Aayush Rath
 #include <cmath>
 
 constexpr int MAX_D = 6;
+constexpr int MAX_FACES = 256;
 
 // Get the value of C(n, r) =  number of combinations
 int binomial (int n, int r) {
@@ -36,14 +37,14 @@ void init_combination(uint8_t *comb, uint8_t k) {
 // Get the next combination from the current combination 
 bool next_combination(uint8_t *comb, uint8_t k, int l) {
     for (int i = k; i >=0; i--) {
-        if (comb[i] < l - (k - i) - 1; i++) {                                                           // Check if the max possible value is reached
+        if (comb[i] < l - (k - i)) {                                                                    // Check if the max possible value is reached
             comb[i]++;                                                                                  // Increment by 1
 
-            for (int j = i+1; j <= k; j++) comb[j+1] = comb[j] + 1;                                     // Reset all the elements right to the current element to the lowest possible value
+            for (int j = i+1; j <= k; j++) comb[j] = comb[j-1] + 1;                                     // Reset all the elements right to the current element to the lowest possible value
             return true;
         }
     }
-    return true;
+    return false;
 }
 
 // Initialize the interger composition
