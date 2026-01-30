@@ -132,15 +132,112 @@ int cofaces(
     if (l < k) return 0;
 
     uint8_t a[MAX_D];
-
     uint8_t bounds[MAX_D];
-    for (int i = 0; i <= k; i++) {
-        bounds[i] = s.block_sizes[i];
-    }
 
-    if (!walsh_init(k, l, bounds, a)) return 0;
-    int coface_index = 0;
+    for (int i = 0; i <= k; i++)
+        bounds[i] = s.block_sizes[i];
+
+    int out_count = 0;
+
+    if (!walsh_init(k, l, bounds, a))
+        return 0;
 
     do {
+        // RGS state for each block
+        uint8_t rgs[MAX_D][MAX_D + 1];
+        uint8_t max_val[MAX_D][MAX_D + 1];
+
+        bool ok = true;
+        for (int i = 0; i <= k; i++) {
+            if (!rgs_init(s.block_sizes[i], a[i] + 1, rgs[i], max_val[i])) {
+                ok = false;
+                break;
+            }
+        }
+        if (!ok) continue;
+
+        bool done = false;
+        while (!done) {
+            uint8_t tmp_blocks[MAX_D + 1][MAX_D + 1];
+            uint8_t tmp_sizes[MAX_D + 1];
+            int block_cursor = 0;
+            int diag_block = -1;
+
+            for (int i = 0; i <= k; i++) {
+                for (int p = 0; p < a[i] + 1; p++) {
+                    tmp_sizes[block_cursor] = 0;
+
+                    for (int j = 0; j < s.block_sizes[i]; j++) {
+                        if (rgs[i][j] == p) {
+                            uint8_t idx = s.blocks[i][j];
+                            tmp_blocks[block_cursor]
+                                      [tmp_sizes[block_cursor]++] = idx;
+                            if (idx == s.amb_dim)
+                                diag_block = block_cursor;
+                        }
+                    }
+                    block_cursor++;
+                }
+            }
+
+            Permutahedral_Simplex out;
+            out.amb_dim = s.amb_dim;
+            out.num_blocks = l + 1;
+
+            for (int i = 0; i < s.amb_dim; i++) out.anchor[i] = s.anchor[i];
+
+            if (diag_block != l) {
+
+                for (int b = 0; b < diag_block; b++) {
+                    for (int j = 0; j < tmp_sizes[b]; j++) {
+                        uint8_t idx = tmp_blocks[b][j];
+                        if (idx < s.amb_dim) {
+                            out.anchor[idx]++;
+                        }
+                    }
+                }
+
+                for (int j = 0; j < tmp_sizes[diag_block]; j++) {
+                    uint8_t idx = tmp_blocks[diag_block][j];
+                    if (idx < s.amb_dim) {
+                        out.anchor[idx]++;
+                    }
+                }
+            }
+
+            int dst = 0;
+            for (int b = diag_block + 1; b < l + 1; b++) {
+                out.block_sizes[dst] = tmp_sizes[b];
+                for (int j = 0; j < tmp_sizes[b]; j++)
+                    out.blocks[dst][j] = tmp_blocks[b][j];
+                dst++;
+            }
+            for (int b = 0; b <= diag_block; b++) {
+                out.block_sizes[dst] = tmp_sizes[b];
+                for (int j = 0; j < tmp_sizes[b]; j++)
+                    out.blocks[dst][j] = tmp_blocks[b][j];
+                dst++;
+            }
+
+
+            l_faces[out_count++] = out;
+
+            bool advanced = false;
+            for (int i = k; i >= 0; i--) {
+                if (rgs_next(s.block_sizes[i], a[i] + 1,
+                             rgs[i], max_val[i])) {
+                    for (int j = i + 1; j <= k; j++)
+                        rgs_init(s.block_sizes[j], a[j] + 1,
+                                 rgs[j], max_val[j]);
+                    advanced = true;
+                    break;
+                }
+            }
+            if (!advanced)
+                done = true;
+        }
+
     } while (walsh_next(k, bounds, a));
+
+    return out_count;
 }
