@@ -11,10 +11,12 @@ Aayush Rath
 #include "permutahedral_simplex.h"
 #include "fk_triangulation.h"
 #include <cassert>
+#include <unordered_map>
+#include <queue>
 
 bool edge_intersection(
     Permutahedral_Simplex&s,
-    FK_Triangulation& fk,
+    const FK_Triangulation& fk,
     double (*sdf)(const double*),
     double* intersection_point
 ) {
@@ -41,12 +43,12 @@ bool edge_intersection(
     fk.cartesian_coordinates(v0, p0);
     fk.cartesian_coordinates(v1, p1);
 
-    if (sdf(p0) * sdf(p1) > 0.0) return false;
-
     int iters = 100;
     double eps = 1e-2 / fk.scale;
     double f0 = sdf(p0);
     double f1 = sdf(p1);
+
+    if (sdf(p0) * sdf(p1) > 1e-4) return false;
 
     int iter = 0;
     while (abs(f0 - f1) > eps) {
@@ -65,4 +67,60 @@ bool edge_intersection(
     }
 
     return true;
+}
+
+bool bound_check(
+    const FK_Triangulation& fk,
+    double* point
+) {
+    for (int i = 0; i < fk.amb_dim; i++) if (point[i] > 3.14 || point[i] < -3.14) return false;
+    return true;
+}
+
+void traceManifold(
+    const FK_Triangulation& fk,
+    double (*sdf)(const double*),
+    std::unordered_map<Permutahedral_Simplex, double*, Permutahedral_Simplex_Hash>& Ls,
+    double* seed
+) {
+    std::queue<Permutahedral_Simplex> Q;
+
+    Permutahedral_Simplex initial_simplex = locate_simplex(fk, seed);
+
+    Permutahedral_Simplex initial_edges[MAX_FACES];
+    int num_faces = faces(initial_simplex, initial_edges, 1);
+    std::cout << num_faces << std::endl;
+
+    for (int i = 0; i < num_faces; i++) {
+        Q.push(initial_edges[i]);
+        double intersection_point[MAX_D];
+        bool h = edge_intersection(initial_edges[i], fk, sdf, intersection_point);
+    }
+
+    int intersect_count =  0;
+
+    while (!Q.empty()) {
+        Permutahedral_Simplex edge = Q.front();
+        Q.pop();
+
+        Permutahedral_Simplex triangles [MAX_COFACES];
+        int num_cofaces = cofaces(edge, triangles, 2);
+        for (int i = 0; i < num_cofaces; i++) {
+            Permutahedral_Simplex new_edges[MAX_FACES];
+            int num_edges = faces(triangles[i], new_edges, 1);
+            for (int j = 0; j < num_edges; j++) {
+                double intersection_point[MAX_D];
+                if (!edge_intersection(new_edges[j], fk, sdf, intersection_point)) continue;
+                if (Ls.find(new_edges[j]) != Ls.end()) continue;
+                if (!bound_check(fk, intersection_point)) continue;
+                intersect_count++;
+                Q.push(new_edges[j]);
+                Ls[new_edges[j]] = intersection_point;
+            }
+        }
+
+        if (intersect_count > 2000) break;
+    }
+
+    std::cout << "Intersection Count: " << intersect_count << std::endl;
 }

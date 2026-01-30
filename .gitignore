@@ -1,3 +1,4 @@
 CMakeLists.txt
 build
 debug.cpp
+plotting

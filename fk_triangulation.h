@@ -40,7 +40,7 @@ struct FK_Triangulation {
     }
 
     // Convert the interger point to the corresponding Euclidean Space point coordinates
-    void cartesian_coordinates(const int32_t *point, double *cartesian_point) {
+    void cartesian_coordinates(const int32_t *point, double *cartesian_point) const {
         for (int i = 0; i < amb_dim; i++) {
             cartesian_point[i] = 0.0;
             for (int j = 0; j < amb_dim; j++) {
@@ -58,8 +58,8 @@ Permutahedral_Simplex locate_simplex(
     Permutahedral_Simplex s;
     s.amb_dim = fk.amb_dim;
 
-    double x[MAX_D];                                                                                   // The point transformed in the FK coordinate system
-    double frac[MAX_D];                                                                                // Fractional part of the transformed point
+    double x[MAX_D+1];                                                                                // The point transformed in the FK coordinate system
+    double frac[MAX_D+1];                                                                             // Fractional part of the transformed point
 
     for (int i = 0; i < fk.amb_dim; i++) {
         double v = point[i] - fk.b[i];
@@ -74,7 +74,7 @@ Permutahedral_Simplex locate_simplex(
         frac[i] = x[i] - yi;
     }
 
-    frac[fk.amb_dim] = std::numeric_limits<double>::max();
+    frac[fk.amb_dim] = std::numeric_limits<double>::infinity();
     
     uint8_t idx[MAX_D];
 
