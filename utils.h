@@ -12,7 +12,6 @@ Aayush Rath
 #include <iostream>
 #include <algorithm>
 #include <functional>
-#include <cassert>
 #include <cmath>
 
 constexpr int MAX_D = 6;

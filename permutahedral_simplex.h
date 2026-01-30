@@ -158,11 +158,13 @@ int cofaces(
 
         bool done = false;
         while (!done) {
+            // Create temporary blocks to give the eaves representation
             uint8_t tmp_blocks[MAX_D + 1][MAX_D + 1];
             uint8_t tmp_sizes[MAX_D + 1];
             int block_cursor = 0;
             int diag_block = -1;
 
+            // Find the position of block that contains the element d (d+1 if indexed from 1)
             for (int i = 0; i <= k; i++) {
                 for (int p = 0; p < a[i] + 1; p++) {
                     tmp_sizes[block_cursor] = 0;
@@ -184,6 +186,8 @@ int cofaces(
             out.amb_dim = s.amb_dim;
             out.num_blocks = l + 1;
 
+            // Shift the anchor if a rotation occurs by summing the basis vector given 
+            // by sum(e_i) with i ∈ ρ where ρ = ρ(1) ∪ ρ(2) ∪ ... ρ(t)
             for (int i = 0; i < s.amb_dim; i++) out.anchor[i] = s.anchor[i];
 
             if (diag_block != l) {
