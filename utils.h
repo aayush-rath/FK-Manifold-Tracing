@@ -94,16 +94,48 @@ bool walsh_next(uint8_t k, const uint8_t *bounds, uint8_t *a) {
 }
 
 // Restricted Growth Strings for creating partitions
-bool rgs_init(uint8_t l, uint8_t k, uint8_t *rgs, uint8_t *max_val) {
-    if (l == 0 || k == 0 || k > l) return false;
+bool rgs_init(uint8_t omega_i, uint8_t a_i, uint8_t *rgs, uint8_t *max_val) {
+    if (omega_i == 0 || a_i == 0 || a_i > omega_i) return false;
 
-    for (uint8_t i = 0; i <= l - k; i++) rgs[i] = 0;
-    for (uint8_t i = l - k + 1, j = 1; i <= l; i++, j++) rgs[i] = j;
+    for (uint8_t i = 0; i <= omega_i - a_i; i++) rgs[i] = 0;                                                    // Set all the intial l-k elements into the 0th partition
+    for (uint8_t i = omega_i - a_i + 1, j = 1; i < omega_i; i++, j++) rgs[i] = j;                                    // Set all the left out one to the next increment partition since 0
 
     max_val[0] = 255;
-    for (uint8_t i = 1; i <= l + 1; i++) {
+    for (uint8_t i = 1; i <= omega_i + 1; i++) {
         max_val[i] = rgs[i - 1] + 1;
     }
 
+    return true;
+}
+
+// Get the next RGS partition
+bool rgs_next(uint8_t omega_i, uint8_t a_i, uint8_t *rgs, uint8_t *max_val) {
+    if (a_i <= 1) return false;
+
+    int i = omega_i - 1;
+    while (i > 0 && (rgs[i] + 1 > max_val[i] || rgs[i] + 1 >= a_i)) i--;                                  // Find the rightmost element in the rgs that can be incremented
+
+    if (i == 0) return false;                                                                           // No more partitions left
+    
+    rgs[i]++;
+    uint8_t mm = max_val[i];
+    mm += (rgs[i] >= mm);
+    max_val[i+1] = mm;
+
+    while (++i < omega_i + 1) {
+        rgs[i] = 0;
+        max_val[i + 1] = mm;
+    }
+
+    uint8_t p = a_i + 1;
+    if (mm < p) {
+        do {
+            max_val[i] = p;
+            i--;
+            p--;
+            rgs[i] = p;
+        } while (max_val[i] < p);
+    }
+    
     return true;
 }

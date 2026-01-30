@@ -1,5 +1,11 @@
 # Manifold Tracing using FK-Triangulation
 
-This is an implementation of the Freudenthal Kuhn Triangulation based manifold from the Thesis paper "Meshing Submanifolds using Coxeter Triangulation" by **Siargey Kachanovich**. This repository contains the implementation specifically for tracing manifolds of co-dimension 1 manifolds i.e. Ambient space dimension is d and the manifold dimension is d-1. 
+This repository contains an independent implementation of the Freudenthal–Kuhn triangulation–based manifold tracing algorithm described in the PhD thesis “Meshing Submanifolds using Coxeter Triangulation” by Siargey Kachanovich.
 
-For the actual implementation of the code please refer to the [GUDHI documentation](https://gudhi.inria.fr/doc/latest/)
+The implementation focuses specifically on tracing co-dimension 1 manifolds, i.e. manifolds of dimension 
+$d−1$ embedded in an ambient space of dimension $d$, using a permutahedral representation of the Freudenthal–Kuhn triangulation.
+
+The algorithmic formulation follows the presentation in Kachanovich’s thesis and is conceptually similar to the approach used in the GUDHI library (MIT licensed), but the code in this repository is written from scratch and does not depend on GUDHI.
+
+For a mature and production-ready implementation of the same algorithmic framework, please refer to the
+[GUDHI documentation](https://gudhi.inria.fr/doc/latest/)
