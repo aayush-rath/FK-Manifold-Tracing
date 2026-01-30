@@ -48,6 +48,38 @@ bool next_combination(uint8_t *comb, uint8_t k, int l) {
     return false;
 }
 
+// Initialize the permutation with 0, 1, 2, ... n-1 (Same as init_combination xD)
+void perm_init(uint8_t n, uint8_t *perm) {
+    for (uint8_t i = 0; i < n; i++) perm[i] = i;
+}
+
+bool perm_next(uint8_t n, uint8_t *perm) {
+    if (n <= 1) return false;
+
+    int i = n - 2;
+    while (i >= 0 && perm[i] >= perm[i + 1]) i--;
+
+    if (i < 0) return false;
+
+    int j = n - 1;
+    while (perm[j] <= perm[i]) j--;
+
+    uint8_t tmp = perm[i];
+    perm[i] = perm[j];
+    perm[j] = tmp;
+
+    int left = i + 1, right = n - 1;
+    while (left < right) {
+        tmp = perm[left];
+        perm[left] = perm[right];
+        perm[right] = tmp;
+        left++;
+        right--;
+    }
+
+    return true;
+}
+
 // Initialize the interger composition
 bool walsh_init(uint8_t k, uint8_t l, const uint8_t *bounds, uint8_t* a) {
     uint8_t remaining = l - k;
