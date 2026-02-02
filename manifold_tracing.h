@@ -166,3 +166,48 @@ void traceManifold(
 
     std::cout << "Intersection Count: " << intersect_count << std::endl;
 }
+
+void triangulate_surface(
+    FK_Triangulation& fk,
+    std::unordered_map<Permutahedral_Simplex, Point, Permutahedral_Simplex_Hash>& Ls,
+    std::unordered_map<Permutahedral_Simplex, std::vector<Point>, Permutahedral_Simplex_Hash>& Ps
+) {
+    std::cout << "=== TRIANGULATE SURFACE ===" << std::endl;
+    std::cout << "Input edges: " << Ls.size() << std::endl;
+    
+    int total_assignments = 0;
+    
+    for (const auto& [edge, point] : Ls) {
+        
+        // Get all d-dimensional cofaces
+        Permutahedral_Simplex d_simplices[MAX_COFACES];
+        int num_cofaces = cofaces(edge, d_simplices, fk.amb_dim);
+        
+        if (total_assignments == 0) {
+            std::cout << "First edge has " << num_cofaces << " d-cofaces" << std::endl;
+        }
+
+        // std::cout << "Point: ";
+        // for (int i = 0; i < fk.amb_dim; i++) std::cout << point[i] << " ";
+        // std::cout << std::endl;
+        
+        // Add this point to all cofaces
+        for (int i = 0; i < num_cofaces; i++) {
+            Ps[d_simplices[i]].push_back(point);
+            total_assignments++;
+        }
+    }
+    
+    std::cout << "Total d-simplices: " << Ps.size() << std::endl;
+    std::cout << "Total assignments: " << total_assignments << std::endl;
+    
+    // Check distribution
+    int with_d_points = 0;
+    for (const auto& [simplex, points] : Ps) {
+        if (points.size() == fk.amb_dim) {
+            with_d_points++;
+        }
+    }
+    std::cout << "d-simplices with exactly d points: " << with_d_points << std::endl;
+    std::cout << "========================" << std::endl;
+}
