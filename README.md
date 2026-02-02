@@ -17,7 +17,6 @@ Each unit cube $[y, y + 1]$ where $y \in \mathbb{Z}^d$ is subdivided into $d!$ s
 
 $$
 y \rightarrow y + e_{\pi(1)} \rightarrow y + e_{\pi(1)} + e_{\pi(2)} \rightarrow \ldots \rightarrow y + \sum_{i=1}^{d} e_{\pi(i)}
-
 $$
 
 <div align = "center">
@@ -25,6 +24,11 @@ $$
 </div>
 
 An l-dimensional simplex in a cube is determined by an ordered partition of the set $\{ 1, 2, \ldots, d+1\}$. So for example in $\mathbb{R}^3$ we want to get the 3-dimensional simplex in which the point $(0.6, 0.2, 0.9)$ lies in. Since the ordering of the coordinates is $x_2 < x_1 < x_3$, we get the traversal ordering as 2, 1, 3 and the ordered partition as $\{\{2\}, \{1\}, \{3\}, \{4\}  \}$. 4 acts as the cap - a termination to the tranversal of vertices. Similar if we were to query a 2-dimensional face, the ordered partition would become $\{\{1, 2\}, \{3\}, \{4\} \}$ so $y \rightarrow y + e_1 + e_2 \rightarrow y + e_1 + e_2 + e_3$
+
+<div align = "center">
+<img src="images/basis.jpg">
+</div>
+
 
 ## Permutahedral Representation
  Let $\sigma$ be a simplex of some dimensions $l \in \{ 0,\ldots, d\}$ in the Freudenthal-Kuhn triangulation of $\mathbb{R}^d$. There exists a unique vertex $y \in \mathbb{Z}^d$ and a unique ordered partition $\omega$ of $\{ 1, \ldots, d+1\}$ with $d+1 \in \omega(l+1)$ such that $\sigma = \phi(y, \omega)$
@@ -158,7 +162,12 @@ output: Set $S$ of the simplicies in $\mathcal{T}$ of dimension $k = d - m$ that
 
 2. 
 
+## Example Tracings
+<div align="center">
+<img src="images/Donut.png">
+<caption>3-simplices that intersect with the surface of a donut i.e. 2-torus </caption>
+</div>
 
 
 ## Acknowledgements
-I would like to thank Prof. Antony Thomas (Proffesor at RRC IIIT Hyderabad) and Dr. Siargey Kachanovich for their inputs and their support for making this implementation possible
+I would like to thank Prof. Antony Thomas (Proffesor at RRC IIIT Hyderabad) and Dr. Siargey Kachanovich for their inputs and their support for making this possible
