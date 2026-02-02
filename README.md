@@ -85,9 +85,12 @@ y' = v_0 + \sum_{j \in \omega(1)}e_j + \ldots + \sum_{j \in \omega(m_0)}e_j
 $$
 
 So the $k$-dimensional face of a $l$-dimensional simplex can be represented as the subset of $k+1$ indices $\{m_0, \ldots, m_k \} \subseteq \{0, 1, \ldots, l \}$. The indices are arranged in the ascending order using a counting sort algorithm (O(l) time complexity) such that $m_0 < m_1 < \ldots < m_k$. After the indices have been sorted, we can use the idea of the permutahedral representation to create a new face. We can define a new ordered partition $\omega'$ as
+
 $$
-\omega'(i) = \omega(m_{i-1}+1) \cup \omega(m_{i-1}+2) \cup \ldots \cup \omega(m_i) \\ \forall i \in \{ 1, 2, \ldots k \} \\
+\begin{split}
+\omega'(i) = \omega(m_{i-1}+1) \cup \omega(m_{i-1}+2) \cup \ldots \cup \omega(m_i) \quad \forall i \in \{ 1, 2, \ldots k \} \\
 \omega'(k+1) = (\omega(1) \cup \ldots \cup \omega(m_0))\cup(\omega(m_k + 1) \cup \ldots \cup \omega(l+1))
+\end{split}
 $$
 
 Lets take an example for a 2d triangle given by the ordered partition $\omega = \{\{0\}, \{1\}, \{2\}\}$ so the all the possible subset of $m$ indices would be $\{0, 1\}, \{1, 2\}, \{0, 2\}$ so the ordered partitions would be (here k = 1)
