@@ -10,6 +10,9 @@ The algorithmic formulation follows the presentation in Kachanovich’s thesis a
 For a mature and production-ready implementation of the same algorithmic framework, please refer to the
 [GUDHI documentation](https://gudhi.inria.fr/doc/latest/)
 
+## Acknowledgements
+I would like to thank Prof. Antony Thomas (Proffesor at RRC IIIT Hyderabad) and Dr. Siargey Kachanovich for their inputs and their support for making this possible
+
 ## Freudenthal-Kuhn triangulation
 The Freudenthal-Kuhn triangulation is a a canonical triangulation of the unit cube $[0, 1]^d$ extended periodically to $\mathbb{R}^d$. 
 
@@ -180,7 +183,3 @@ output: Set $S$ of the simplicies in $\mathcal{T}$ of dimension $k = d - m$ that
 <img src="images/Donut.png">
 <caption>3-simplices that intersect with the surface of a donut i.e. 2-torus </caption>
 </div>
-
-
-## Acknowledgements
-I would like to thank Prof. Antony Thomas (Proffesor at RRC IIIT Hyderabad) and Dr. Siargey Kachanovich for their inputs and their support for making this possible
