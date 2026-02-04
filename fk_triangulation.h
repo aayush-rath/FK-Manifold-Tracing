@@ -52,6 +52,43 @@ struct FK_Triangulation {
     }
 };
 
+struct C_Triangulation : public FK_Triangulation {
+
+    C_Triangulation(uint8_t d)
+        : FK_Triangulation(d)   // initialize base normally
+    {
+        compute_coxeter_embedding();
+    }
+
+private:
+    void compute_coxeter_embedding() {
+        using Matrix = Eigen::MatrixXd;
+
+        const int d = amb_dim;
+
+        Matrix cartan = Matrix::Identity(d, d);
+        for (int i = 1; i < d; i++) {
+            cartan(i - 1, i) = -0.5;
+            cartan(i, i - 1) = -0.5;
+        }
+
+        Eigen::SelfAdjointEigenSolver<Matrix> saes(cartan);
+        Matrix V = saes.eigenvectors();
+        Matrix D = saes.eigenvalues().cwiseSqrt().asDiagonal();
+
+        Matrix lower = Matrix::Ones(d, d).triangularView<Eigen::Lower>();
+
+        Matrix C = (lower * V * D).inverse();
+        Matrix Cinv = C.inverse();
+        for (int i = 0; i < d; i++) {
+            for (int j = 0; j < d; j++) {
+                Lambda[i][j]     = C(i, j);
+                Lambda_inv[i][j] = Cinv(i, j);
+            }
+        }
+    }
+};
+
 Permutahedral_Simplex locate_simplex(
     const FK_Triangulation& fk,
     const double *point
