@@ -9,6 +9,7 @@ Aayush Rath
 
 #include "utils.h"
 #include "permutahedral_simplex.h"
+#include <Eigen/Dense>
 
 struct FK_Triangulation {
     uint8_t amb_dim;                                                                                    // Ambient space dimension

@@ -151,10 +151,10 @@ void traceManifold(
                     p[i] = intersection_point[i];
 
                 Ls[new_edges[j]] = p;
-                if (intersect_count % 10000 == 0)
-                {std::cout << "Intersection Point: ";
-                for(int i = 0; i < fk.amb_dim; i++) std::cout << Ls[new_edges[j]][i] << " ";
-                std::cout << std::endl;}
+                // if (intersect_count % 10000 == 0)
+                // {std::cout << "Intersection Point: ";
+                // for(int i = 0; i < fk.amb_dim; i++) std::cout << Ls[new_edges[j]][i] << " ";
+                // std::cout << std::endl;}
             }
         }
 
@@ -167,47 +167,142 @@ void traceManifold(
     std::cout << "Intersection Count: " << intersect_count << std::endl;
 }
 
+// void triangulate_surface(
+//     FK_Triangulation& fk,
+//     std::unordered_map<Permutahedral_Simplex, Point, Permutahedral_Simplex_Hash>& Ls,
+//     std::unordered_map<Permutahedral_Simplex, std::vector<Point>, Permutahedral_Simplex_Hash>& Ps
+// ) {
+//     std::cout << "=== TRIANGULATE SURFACE ===" << std::endl;
+//     std::cout << "Input edges: " << Ls.size() << std::endl;
+    
+//     int total_assignments = 0;
+    
+//     for (const auto& [edge, point] : Ls) {
+        
+//         // Get all d-dimensional cofaces
+//         Permutahedral_Simplex d_simplices[MAX_COFACES];
+//         int num_cofaces = cofaces(edge, d_simplices, fk.amb_dim);
+        
+//         if (total_assignments == 0) {
+//             std::cout << "First edge has " << num_cofaces << " d-cofaces" << std::endl;
+//         }
+
+//         // std::cout << "Point: ";
+//         // for (int i = 0; i < fk.amb_dim; i++) std::cout << point[i] << " ";
+//         // std::cout << std::endl;
+        
+//         // Add this point to all cofaces
+//         for (int i = 0; i < num_cofaces; i++) {
+//             Ps[d_simplices[i]].push_back(point);
+//             total_assignments++;
+//         }
+//     }
+
+//     for (auto& p : Ps) {
+//         std::cout << "D-simplex has " << p.second.size() << " points" << std::endl;
+//     }
+    
+//     // std::cout << "Total d-simplices: " << Ps.size() << std::endl;
+//     // std::cout << "Total assignments: " << total_assignments << std::endl;
+    
+//     // // Check distribution
+//     // int with_d_points = 0;
+//     // for (const auto& [simplex, points] : Ps) {
+//     //     if (points.size() == fk.amb_dim) {
+//     //         with_d_points++;
+//     //     }
+//     // }
+//     // std::cout << "d-simplices with exactly d points: " << with_d_points << std::endl;
+//     std::cout << "========================" << std::endl;
+// }
+
+bool same_point(
+    const Point& a,
+    const Point& b,
+    double eps = 1e-8
+) {
+    for (int i = 0; i < 3; i++) {
+        if (std::abs(a[i] - b[i]) > eps)
+            return false;
+    }
+    return true;
+}
+
+
 void triangulate_surface(
     FK_Triangulation& fk,
-    std::unordered_map<Permutahedral_Simplex, Point, Permutahedral_Simplex_Hash>& Ls,
-    std::unordered_map<Permutahedral_Simplex, std::vector<Point>, Permutahedral_Simplex_Hash>& Ps
+    const std::unordered_map<
+        Permutahedral_Simplex,
+        Point,
+        Permutahedral_Simplex_Hash
+    >& Ls,
+    std::unordered_map<
+        Permutahedral_Simplex,
+        std::vector<Point>,
+        Permutahedral_Simplex_Hash
+    >& Ps
 ) {
-    std::cout << "=== TRIANGULATE SURFACE ===" << std::endl;
+    std::cout << "=== TRIANGULATE SURFACE (POINT-DEDUP TEST) ===" << std::endl;
     std::cout << "Input edges: " << Ls.size() << std::endl;
-    
-    int total_assignments = 0;
-    
+
+    // d-simplex -> (edge -> intersection point)
+    std::unordered_map<
+        Permutahedral_Simplex,
+        std::unordered_map<
+            Permutahedral_Simplex,
+            Point,
+            Permutahedral_Simplex_Hash
+        >,
+        Permutahedral_Simplex_Hash
+    > M;
+
+    // Accumulate with edge-level deduplication
     for (const auto& [edge, point] : Ls) {
-        
-        // Get all d-dimensional cofaces
         Permutahedral_Simplex d_simplices[MAX_COFACES];
         int num_cofaces = cofaces(edge, d_simplices, fk.amb_dim);
-        
-        if (total_assignments == 0) {
-            std::cout << "First edge has " << num_cofaces << " d-cofaces" << std::endl;
+
+        for (int i = 0; i < num_cofaces; i++) {
+            M[d_simplices[i]].emplace(edge, point);
+        }
+    }
+
+    std::size_t emitted = 0;
+    std::size_t skipped = 0;
+
+    // Convert to Ps with point-level deduplication
+    for (auto& [d_simplex, edge_map] : M) {
+
+        std::vector<Point> unique_pts;
+        unique_pts.reserve(edge_map.size());
+
+        for (const auto& [edge, p] : edge_map) {
+            bool exists = false;
+            for (const auto& q : unique_pts) {
+                if (same_point(p, q)) {
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists)
+                unique_pts.push_back(p);
         }
 
-        // std::cout << "Point: ";
-        // for (int i = 0; i < fk.amb_dim; i++) std::cout << point[i] << " ";
-        // std::cout << std::endl;
-        
-        // Add this point to all cofaces
-        for (int i = 0; i < num_cofaces; i++) {
-            Ps[d_simplices[i]].push_back(point);
-            total_assignments++;
+        if (unique_pts.size() < 3) {
+            skipped++;
+            continue;
         }
+
+        auto& pts = Ps[d_simplex];
+        pts.reserve(3);
+        pts.push_back(unique_pts[0]);
+        pts.push_back(unique_pts[1]);
+        pts.push_back(unique_pts[2]);
+
+        emitted++;
     }
-    
-    std::cout << "Total d-simplices: " << Ps.size() << std::endl;
-    std::cout << "Total assignments: " << total_assignments << std::endl;
-    
-    // Check distribution
-    int with_d_points = 0;
-    for (const auto& [simplex, points] : Ps) {
-        if (points.size() == fk.amb_dim) {
-            with_d_points++;
-        }
-    }
-    std::cout << "d-simplices with exactly d points: " << with_d_points << std::endl;
+
+    std::cout << "Raw d-simplices: " << M.size() << std::endl;
+    std::cout << "Emitted triangles: " << emitted << std::endl;
+    std::cout << "Skipped (<3 unique pts): " << skipped << std::endl;
     std::cout << "========================" << std::endl;
 }
