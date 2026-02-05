@@ -12,6 +12,9 @@ For a mature and production-ready implementation of the same algorithmic framewo
 
 ## Acknowledgements
 I would like to thank Prof. Antony Thomas (Proffesor at RRC IIIT Hyderabad) and Dr. Siargey Kachanovich for their inputs and their support for making this possible
+<div align="center">
+<img src = "images/sphere.gif">
+</div>
 
 ## Freudenthal-Kuhn triangulation
 The Freudenthal-Kuhn triangulation is a a canonical triangulation of the unit cube $[0, 1]^d$ extended periodically to $\mathbb{R}^d$. 

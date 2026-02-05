@@ -16,16 +16,14 @@ Aayush Rath
 
 using Point = std::array<double, MAX_D>;
 
-
 bool edge_intersection(
-    Permutahedral_Simplex&s,
+    Permutahedral_Simplex& s,
     const FK_Triangulation& fk,
     double (*sdf)(const double*),
     double* intersection_point
 ) {
     assert(s.num_blocks == 2);
 
-    // Endpoints of the edge as FK coordinates
     int32_t v0[MAX_D];
     for (int i = 0; i < s.amb_dim; ++i) v0[i] = s.anchor[i];
     
@@ -46,50 +44,52 @@ bool edge_intersection(
     fk.cartesian_coordinates(v0, p0);
     fk.cartesian_coordinates(v1, p1);
 
-    // std::cout << "Point 1: ";
-    // for (int i = 0; i < fk.amb_dim; i++) std::cout << p0[i] << " ";
-    // std::cout << std::endl;
-
-    // std::cout << "Point 2: ";
-    // for (int i = 0; i < fk.amb_dim; i++) std::cout << p1[i] << " ";
-    // std::cout << std::endl;
-
-    int iters = 100;
-    double eps = 1e-10 / fk.scale;
     double f0 = sdf(p0);
     double f1 = sdf(p1);
 
-    // std::cout << "SDF Point 1: " << f0 << " SDF Point 2: " << f1 << " Tolerance: " << eps << std::endl;
-    //  if (f0 * f1 > 0.0) std::cout << "It doesn't intersect!" << std::endl;
-
-    if (f0 * f1 > 0.0) return false;
-    // std::cout << "It intersects!" << std::endl;
-
-    for (int i = 0; i < s.amb_dim; i++) intersection_point[i] = p0[i];
-
-    double f_mid = sdf(p0);
-    // std::cout << "Sdf value at mid: " << std::abs(f_mid) << " " << (std::abs(f_mid) > eps? "True" : "False") << std::endl;
-
-    int iter = 0;
-    while (std::abs(f_mid) > eps) {
-        iter++;
-
-        for (int i = 0; i < s.amb_dim; i++) intersection_point[i] = (f1 * p0[i] - f0 * p1[i])/(f1 - f0);
-        f_mid = sdf(intersection_point);
-        if (f_mid * f1 > 0) {
-            for (int i = 0; i < s.amb_dim; i++) p1[i] = intersection_point[i];
-            f1 = sdf(p1);
-        } else {
-            for (int i = 0; i < s.amb_dim; i++) p0[i] = intersection_point[i];
-            f0 = sdf(p0);
-        }
-
-        if (iter == iters) break;
+    const double vertex_eps = 1e-10;
+    if (std::abs(f0) < vertex_eps || std::abs(f1) < vertex_eps) {
+        return false;
     }
 
-    // std::cout << "Calculated Intersection Point: ";
-    // for (int i = 0; i < fk.amb_dim; i++) std::cout << intersection_point[i]  << " ";
-    // std::cout << std::endl;
+    if (f0 * f1 >= 0.0) return false;
+
+    Eigen::Matrix2d A;
+    A << 1.0, 1.0,
+         f0,  f1;
+    
+    Eigen::Vector2d b(1.0, 0.0);
+    Eigen::Vector2d lambda = A.colPivHouseholderQr().solve(b);
+
+    if (lambda(0)  < 1e-2 || lambda(1) < 1e-2) std::cout << "Lambda1: " << lambda(0) << " Lambda2: " << lambda(1) << std::endl;
+
+    // Validate the solution
+    const double bary_eps = 1e-8;
+    const double residual_eps = 1e-8;
+    
+    // Check if solution is numerically valid
+    Eigen::Vector2d residual = A * lambda - b;
+    if (residual.norm() > residual_eps) {
+        // Solution is not accurate enough
+        return false;
+    }
+    
+    // Check barycentric coordinates are in (0, 1) - strictly interior
+    if (lambda(0) <= bary_eps || lambda(0) >= 1.0 - bary_eps ||
+        lambda(1) <= bary_eps || lambda(1) >= 1.0 - bary_eps) {
+        // Intersection is too close to a vertex
+        return false;
+    }
+    
+    // Check sum = 1
+    if (std::abs(lambda.sum() - 1.0) > bary_eps) {
+        return false;
+    }
+
+    // Compute intersection point
+    for (int i = 0; i < fk.amb_dim; ++i) {
+        intersection_point[i] = lambda(0) * p0[i] + lambda(1) * p1[i];
+    }
 
     return true;
 }
@@ -158,7 +158,7 @@ void traceManifold(
             }
         }
 
-        if (intersect_count > 1000000) {
+        if (intersect_count > 10) {
             std::cout << "Size of the queue: " << Q.size() << std::endl;
             break;
         }
@@ -167,59 +167,10 @@ void traceManifold(
     std::cout << "Intersection Count: " << intersect_count << std::endl;
 }
 
-// void triangulate_surface(
-//     FK_Triangulation& fk,
-//     std::unordered_map<Permutahedral_Simplex, Point, Permutahedral_Simplex_Hash>& Ls,
-//     std::unordered_map<Permutahedral_Simplex, std::vector<Point>, Permutahedral_Simplex_Hash>& Ps
-// ) {
-//     std::cout << "=== TRIANGULATE SURFACE ===" << std::endl;
-//     std::cout << "Input edges: " << Ls.size() << std::endl;
-    
-//     int total_assignments = 0;
-    
-//     for (const auto& [edge, point] : Ls) {
-        
-//         // Get all d-dimensional cofaces
-//         Permutahedral_Simplex d_simplices[MAX_COFACES];
-//         int num_cofaces = cofaces(edge, d_simplices, fk.amb_dim);
-        
-//         if (total_assignments == 0) {
-//             std::cout << "First edge has " << num_cofaces << " d-cofaces" << std::endl;
-//         }
-
-//         // std::cout << "Point: ";
-//         // for (int i = 0; i < fk.amb_dim; i++) std::cout << point[i] << " ";
-//         // std::cout << std::endl;
-        
-//         // Add this point to all cofaces
-//         for (int i = 0; i < num_cofaces; i++) {
-//             Ps[d_simplices[i]].push_back(point);
-//             total_assignments++;
-//         }
-//     }
-
-//     for (auto& p : Ps) {
-//         std::cout << "D-simplex has " << p.second.size() << " points" << std::endl;
-//     }
-    
-//     // std::cout << "Total d-simplices: " << Ps.size() << std::endl;
-//     // std::cout << "Total assignments: " << total_assignments << std::endl;
-    
-//     // // Check distribution
-//     // int with_d_points = 0;
-//     // for (const auto& [simplex, points] : Ps) {
-//     //     if (points.size() == fk.amb_dim) {
-//     //         with_d_points++;
-//     //     }
-//     // }
-//     // std::cout << "d-simplices with exactly d points: " << with_d_points << std::endl;
-//     std::cout << "========================" << std::endl;
-// }
-
 bool same_point(
     const Point& a,
     const Point& b,
-    double eps = 1e-8
+    double eps = 1e-2
 ) {
     for (int i = 0; i < 3; i++) {
         if (std::abs(a[i] - b[i]) > eps)
@@ -244,17 +195,7 @@ void triangulate_surface(
 ) {
     std::cout << "=== TRIANGULATE SURFACE (POINT-DEDUP TEST) ===" << std::endl;
     std::cout << "Input edges: " << Ls.size() << std::endl;
-
-    // d-simplex -> (edge -> intersection point)
-    std::unordered_map<
-        Permutahedral_Simplex,
-        std::unordered_map<
-            Permutahedral_Simplex,
-            Point,
-            Permutahedral_Simplex_Hash
-        >,
-        Permutahedral_Simplex_Hash
-    > M;
+    int num_tri = 0;
 
     // Accumulate with edge-level deduplication
     for (const auto& [edge, point] : Ls) {
@@ -262,47 +203,24 @@ void triangulate_surface(
         int num_cofaces = cofaces(edge, d_simplices, fk.amb_dim);
 
         for (int i = 0; i < num_cofaces; i++) {
-            M[d_simplices[i]].emplace(edge, point);
-        }
-    }
-
-    std::size_t emitted = 0;
-    std::size_t skipped = 0;
-
-    // Convert to Ps with point-level deduplication
-    for (auto& [d_simplex, edge_map] : M) {
-
-        std::vector<Point> unique_pts;
-        unique_pts.reserve(edge_map.size());
-
-        for (const auto& [edge, p] : edge_map) {
-            bool exists = false;
-            for (const auto& q : unique_pts) {
-                if (same_point(p, q)) {
-                    exists = true;
-                    break;
+            if (!Ps[d_simplices[i]].empty())  {
+                bool found_duplicate = false;
+                for (auto& p : Ps[d_simplices[i]]) {
+                    if (same_point(p, point)) {
+                        found_duplicate = true;
+                        break;
+                    }
                 }
-            }
-            if (!exists)
-                unique_pts.push_back(p);
+                if (!found_duplicate) {
+                    Ps[d_simplices[i]].push_back(point);
+                }
+            } else Ps[d_simplices[i]].push_back(point);
         }
-
-        if (unique_pts.size() < 3) {
-            skipped++;
-            continue;
-        }
-
-        auto& pts = Ps[d_simplex];
-        pts.reserve(3);
-        pts.push_back(unique_pts[0]);
-        pts.push_back(unique_pts[1]);
-        pts.push_back(unique_pts[2]);
-
-        emitted++;
     }
 
-    std::cout << "Raw d-simplices: " << M.size() << std::endl;
-    std::cout << "Emitted triangles: " << emitted << std::endl;
-    std::cout << "Skipped (<3 unique pts): " << skipped << std::endl;
-    std::cout << "========================" << std::endl;
+    for (auto& d_simp : Ps) {
+        if (d_simp.second.size() < 3) num_tri++; 
+    }
+
+    std::cout << "Number of triangles: " << num_tri << std::endl;
 }

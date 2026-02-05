@@ -40,12 +40,22 @@ struct FK_Triangulation {
         for (int i = 0;i < d; i++) b[i] = 0.0;
     }
 
+    FK_Triangulation(uint8_t d, const Eigen::MatrixXd& matrix) : amb_dim(d) {
+        Eigen::MatrixXd matrix_inv = matrix.inverse();
+        for (int i = 0; i < d; i++) {
+            for (int j = 0; j < d; j++) {
+                Lambda[i][j] = matrix(i, j);
+                Lambda_inv[i][j] = matrix_inv(i, j);
+            }
+        }
+    }
+
     // Convert the interger point to the corresponding Euclidean Space point coordinates
     void cartesian_coordinates(const int32_t *point, double *cartesian_point) const {
         for (int i = 0; i < amb_dim; i++) {
             cartesian_point[i] = 0.0;
             for (int j = 0; j < amb_dim; j++) {
-                cartesian_point[i] += Lambda[i][j] * (point[i] / scale);
+                cartesian_point[i] += Lambda[i][j] * (point[j] / scale);
             }
             cartesian_point[i] += b[i];
         } 
@@ -53,39 +63,35 @@ struct FK_Triangulation {
 };
 
 struct C_Triangulation : public FK_Triangulation {
-
     C_Triangulation(uint8_t d)
-        : FK_Triangulation(d)   // initialize base normally
-    {
-        compute_coxeter_embedding();
-    }
+        : FK_Triangulation(d, compute_coxeter_matrix(d)) {}
 
 private:
-    void compute_coxeter_embedding() {
+    static Eigen::MatrixXd compute_coxeter_matrix(int d) {
         using Matrix = Eigen::MatrixXd;
-
-        const int d = amb_dim;
-
+        
+        // Build the Cartan matrix for type A_{d-1}
         Matrix cartan = Matrix::Identity(d, d);
         for (int i = 1; i < d; i++) {
             cartan(i - 1, i) = -0.5;
             cartan(i, i - 1) = -0.5;
         }
-
+        
+        // Compute the eigendecomposition
         Eigen::SelfAdjointEigenSolver<Matrix> saes(cartan);
         Matrix V = saes.eigenvectors();
-        Matrix D = saes.eigenvalues().cwiseSqrt().asDiagonal();
-
-        Matrix lower = Matrix::Ones(d, d).triangularView<Eigen::Lower>();
-
-        Matrix C = (lower * V * D).inverse();
-        Matrix Cinv = C.inverse();
+        
+        // Compute sqrt of eigenvalues
+        Eigen::VectorXd sqrt_diag(d);
         for (int i = 0; i < d; i++) {
-            for (int j = 0; j < d; j++) {
-                Lambda[i][j]     = C(i, j);
-                Lambda_inv[i][j] = Cinv(i, j);
-            }
+            sqrt_diag(i) = std::sqrt(saes.eigenvalues()[i]);
         }
+        
+        // The embedding matrix
+        Matrix lower = Matrix::Ones(d, d).triangularView<Eigen::Lower>();
+        Matrix result = (lower * V * sqrt_diag.asDiagonal()).inverse();
+        
+        return result;
     }
 };
 
